@@ -1,0 +1,24 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Profile photos: owner can write their own, anyone signed in can view.
+    // NOTE: NIC card images are never uploaded here or anywhere else in
+    // Storage — extractNicFields handles that image in-memory only.
+    match /profilePhotos/{uid}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size < 8 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Voice notes (for the upcoming voice-notes module) — same owner pattern.
+    match /voiceNotes/{chatId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('audio/.*');
+    }
+  }
+}
